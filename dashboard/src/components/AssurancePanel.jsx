@@ -1,3 +1,5 @@
+import { TrustRing } from "./ui";
+
 const NAMES = {
   flood_detector: "Flood detector",
   scan_detector: "Scan detector",
@@ -10,18 +12,22 @@ export default function AssurancePanel({ assurance }) {
   if (!dets.length) return <p className="empty">Model health appears once the detectors are running.</p>;
   return (
     <div>
-      {dets.map((d) => (
-        <div className="trust" key={d.detector}>
-          <div>
-            <div className="name">{NAMES[d.detector] || d.detector}</div>
-            <div className="meta">
-              {d.status === "degraded" ? "degraded — verify its alerts manually" : "healthy"} ·{" "}
-              {d.feedback?.labelled || 0} labelled, {Math.round((d.feedback?.fp_rate || 0) * 100)}% FP
+      {dets.map((d) => {
+        const bad = d.trust_score < d.threshold;
+        return (
+          <div className="trust" key={d.detector}>
+            <TrustRing score={d.trust_score} bad={bad} />
+            <div className="body">
+              <div className="name">{NAMES[d.detector] || d.detector}</div>
+              <div className="meta">
+                {d.feedback?.labelled || 0} labelled · {Math.round((d.feedback?.fp_rate || 0) * 100)}% false-positive
+                {" · "}{d.alerts_recent || 0} recent
+              </div>
             </div>
+            <span className={`state ${bad ? "bad" : "ok"}`}>{bad ? "Degraded" : "Healthy"}</span>
           </div>
-          <div className={`score${d.trust_score < d.threshold ? " bad" : ""}`}>{d.trust_score}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

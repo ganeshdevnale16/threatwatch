@@ -1,6 +1,7 @@
 import AlertTable from "../components/AlertTable";
 import AssurancePanel from "../components/AssurancePanel";
 import { AlertsPerMinute, TopTalkers } from "../components/Charts";
+import { IconAlert, IconBolt, IconPlug, IconPulse, IconRadar, IconShield, IconUsers } from "../components/icons";
 import { Kpi, Panel } from "../components/ui";
 import { useLive } from "../hooks/useLive";
 
@@ -16,27 +17,27 @@ export default function Dashboard() {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div className="row k">
-        <Kpi label="Alerts (total)" value={totalAlerts} accent />
-        <Kpi label="High / critical" value={highish} />
-        <Kpi label="Requests/s" value={reqPerS.toFixed(1)} unit="now" />
-        <Kpi label="Active sources" value={live.active_sources ?? 0} />
-        <Kpi label="Integrations" value={integrations} />
+        <Kpi label="Total alerts" value={totalAlerts} icon={IconAlert} tone="green" trend="all time" />
+        <Kpi label="High / critical" value={highish} icon={IconBolt} tone={highish ? "red" : "green"} trend="needs review" />
+        <Kpi label="Requests / sec" value={reqPerS.toFixed(1)} icon={IconPulse} trend="live, all sites" />
+        <Kpi label="Active sources" value={live.active_sources ?? 0} icon={IconUsers} trend="in window" />
+        <Kpi label="Integrations" value={integrations} icon={IconPlug} trend="connected sites" />
       </div>
 
       <div className="row two">
-        <Panel title="Live threat alerts" aside="newest first">
+        <Panel title="Live threat alerts" icon={IconAlert} aside="newest first">
           <AlertTable alerts={alerts} />
         </Panel>
-        <Panel title="AI assurance" aside="model health, live">
+        <Panel title="AI assurance" icon={IconShield} aside="model health">
           <AssurancePanel assurance={assurance} />
         </Panel>
       </div>
 
       <div className="row wide">
-        <Panel title="Alerts per minute">
+        <Panel title="Alert volume" icon={IconPulse} aside="per minute">
           <AlertsPerMinute alerts={alerts} />
         </Panel>
-        <Panel title="Top talkers" aside="current window">
+        <Panel title="Top talkers" icon={IconRadar} aside="current window">
           <TopTalkers stats={stats} />
         </Panel>
       </div>
