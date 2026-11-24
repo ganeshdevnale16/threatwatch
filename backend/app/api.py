@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -76,10 +77,15 @@ def _full_stats() -> dict:
     }
 
 
+# Origins allowed to call the API from a browser (the dashboard). Add your
+# deployed dashboard URL here, or set ALLOWED_ORIGINS="https://a,https://b".
+_env_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
+_origins = list(dict.fromkeys([*cfg["api"]["allowed_origins"], *_env_origins]))
+
 app = FastAPI(title="ThreatWatch", version=__version__, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cfg["api"]["allowed_origins"],
+    allow_origins=_origins,
     allow_methods=["*"], allow_headers=["*"],
 )
 

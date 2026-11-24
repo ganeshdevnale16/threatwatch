@@ -1,0 +1,18 @@
+# One-click backend deploy on Render (https://render.com).
+# In Render: New → Blueprint → pick this repo. It builds only the backend/ folder.
+# Render injects $PORT automatically; run.py binds 0.0.0.0:$PORT.
+services:
+  - type: web
+    name: threatwatch-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      # Set this to your deployed dashboard URL after you create it, e.g.
+      #   https://threatwatch-dashboard.vercel.app
+      - key: ALLOWED_ORIGINS
+        sync: false

@@ -18,7 +18,8 @@ from app.config import get_config, load_env
 if __name__ == "__main__":
     load_env()
     cfg = get_config()
-    host = os.environ.get("API_HOST", cfg["api"]["host"])
-    port = int(os.environ.get("API_PORT", cfg["api"]["port"]))
+    # Hosts (Render/Railway/Fly) inject $PORT and need 0.0.0.0 to be reachable.
+    host = os.environ.get("API_HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT") or os.environ.get("API_PORT") or cfg["api"]["port"])
     print(f"ThreatWatch API on http://{host}:{port}  (dashboard proxies /api and /ws here)")
     uvicorn.run("app.api:app", host=host, port=port, reload=False, log_level="info")
