@@ -1,0 +1,70 @@
+# ThreatWatch runtime configuration.
+# These are starting thresholds tuned for a small/medium site. Adjust to your traffic.
+# Every value under `detection:` is fingerprinted into each alert's trace, so a
+# change here is visible in the audit trail.
+
+api:
+  host: 127.0.0.1
+  port: 8000
+  # The dashboard dev server. Add your deployed dashboard origin here too.
+  allowed_origins:
+    - http://localhost:5173
+    - http://127.0.0.1:5173
+
+storage:
+  sqlite_path: data/threatwatch.db
+
+detection:
+  # Sliding window the detectors reason over (seconds of event time).
+  window_s: 60
+  # An IP with no activity for this long is evicted from memory.
+  idle_evict_s: 900
+  # Per (site, ip, threat_class) cooldown so one attacker does not spam the feed.
+  cooldown_s: 120
+
+  flood:
+    # Requests from a single IP within the window.
+    ip_req_threshold: 120
+    # Site-wide requests within the window (distributed flood).
+    site_req_threshold: 1500
+    # Share of 5xx/timeout responses that signals the origin is being overwhelmed.
+    error_ratio_warn: 0.30
+    min_requests: 40          # evidence gate: ignore tiny bursts
+
+  scan:
+    distinct_paths_threshold: 25   # one IP touching this many distinct paths
+    notfound_ratio_warn: 0.60      # most of them missing -> enumeration
+    min_requests: 20
+    # Paths that should essentially never be requested on a normal app.
+    sensitive_paths:
+      - /.env
+      - /.git
+      - /wp-login.php
+      - /wp-admin
+      - /phpmyadmin
+      - /.aws/credentials
+      - /config.json
+      - /actuator
+      - /server-status
+      - /.ssh/id_rsa
+
+  injection:
+    # Minimum signature confidence (0-1) before an alert is raised.
+    min_confidence: 0.55
+
+  beacon:
+    lookback_s: 1200          # beacons are slow: keep a longer memory than the main window
+    min_events: 12            # regular check-ins needed before we call it a beacon
+    interval_cv_max: 0.20     # low variation in gap between requests = automated
+    min_span_s: 120
+
+severity:
+  high: 0.90
+  medium: 0.75
+
+assurance:
+  # A detector's trust score (0-100) drops when analysts keep marking its alerts
+  # as false positives, or when its alert volume looks implausible.
+  min_feedback: 15
+  fp_rate_warn: 0.40
+  trust_alert_below: 70
