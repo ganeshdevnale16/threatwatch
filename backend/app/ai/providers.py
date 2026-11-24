@@ -24,9 +24,33 @@ def call_model(cfg: dict, system: str, user: str, max_tokens: int = 320) -> str:
     provider = (cfg.get("provider") or "").lower()
     if provider == "anthropic":
         return _anthropic(cfg, system, user, max_tokens)
+    if provider == "azure":
+        return _azure(cfg, system, user, max_tokens)
     if provider in ("openai", "local"):
         return _openai_compatible(cfg, system, user, max_tokens)
     raise ProviderError(f"unknown provider: {provider!r}")
+
+
+def _azure(cfg: dict, system: str, user: str, max_tokens: int) -> str:
+    # Azure OpenAI (also how OpenAI models in Azure AI Foundry are called):
+    # POST {endpoint}/openai/deployments/{deployment}/chat/completions?api-version=...
+    # with an `api-key` header. `model` holds the deployment name; `base_url` the endpoint.
+    endpoint = (cfg.get("base_url") or "").rstrip("/")
+    if not endpoint:
+        raise ProviderError("Azure needs the endpoint in 'base_url', e.g. https://my-res.openai.azure.com")
+    deployment = cfg["model"]
+    api_version = cfg.get("api_version") or "2024-06-01"
+    url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
+    headers = {"Content-Type": "application/json", "api-key": cfg.get("api_key") or ""}
+    body = {
+        "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        "max_tokens": max_tokens,
+        "temperature": 0.2,
+    }
+    r = requests.post(url, json=body, headers=headers, timeout=TIMEOUT)
+    if r.status_code >= 400:
+        raise ProviderError(f"{r.status_code}: {r.text[:300]}")
+    return r.json()["choices"][0]["message"]["content"].strip()
 
 
 def _openai_compatible(cfg: dict, system: str, user: str, max_tokens: int) -> str:

@@ -15,6 +15,8 @@ export type ReqEvent = {
   ua: string;
   referer: string;
   country: string;
+  latency_ms: number;
+  bytes: number;
 };
 
 export function buildEvent(
@@ -37,6 +39,8 @@ export function buildEvent(
     ua: h.get("user-agent") || "",
     referer: h.get("referer") || "",
     country: h.get("x-vercel-ip-country") || "",
+    latency_ms: 0,
+    bytes: 0,
     ...extra,
   };
 }

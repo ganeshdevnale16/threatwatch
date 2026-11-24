@@ -3,14 +3,15 @@ import { api } from "../api/client";
 import { Panel } from "../components/ui";
 
 const PROVIDERS = [
-  { id: "openai", label: "OpenAI", hint: "e.g. gpt-4o-mini · leave base URL blank" },
+  { id: "openai", label: "OpenAI", hint: "e.g. gpt-4o · sk-… key · base URL optional (any OpenAI-compatible host)" },
+  { id: "azure", label: "Azure OpenAI / Foundry", hint: "Azure/Foundry GPT deployments · set endpoint + deployment + API version" },
   { id: "anthropic", label: "Anthropic", hint: "e.g. claude-sonnet-4-5" },
-  { id: "local", label: "Local / OpenAI-compatible", hint: "Ollama, LM Studio, vLLM, OpenRouter — set base URL" },
+  { id: "local", label: "Local / custom", hint: "Ollama, LM Studio, vLLM, OpenRouter — set base URL" },
 ];
 
 export default function Settings() {
   const [models, setModels] = useState([]);
-  const [form, setForm] = useState({ label: "", provider: "openai", model: "", api_key: "", base_url: "", make_default: false });
+  const [form, setForm] = useState({ label: "", provider: "openai", model: "", api_key: "", base_url: "", api_version: "", make_default: false });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [testResult, setTestResult] = useState({});
@@ -27,7 +28,7 @@ export default function Settings() {
     setErr(null);
     try {
       await api.addModel(form);
-      setForm({ label: "", provider: "openai", model: "", api_key: "", base_url: "", make_default: false });
+      setForm({ label: "", provider: "openai", model: "", api_key: "", base_url: "", api_version: "", make_default: false });
       await load();
     } catch (e2) {
       setErr(e2.message);
@@ -102,15 +103,23 @@ export default function Settings() {
             <label className="fld"><span>Label</span>
               <input className="in" value={form.label} onChange={set("label")} placeholder="My GPT model" />
             </label>
-            <label className="fld"><span>Model name</span>
-              <input className="in" value={form.model} onChange={set("model")} placeholder={form.provider === "anthropic" ? "claude-sonnet-4-5" : "gpt-4o-mini"} />
+            <label className="fld"><span>{form.provider === "azure" ? "Deployment name" : "Model name"}</span>
+              <input className="in" value={form.model} onChange={set("model")}
+                placeholder={form.provider === "anthropic" ? "claude-sonnet-4-5" : form.provider === "azure" ? "your deployment, e.g. gpt-4o" : "gpt-4o"} />
             </label>
             <label className="fld"><span>API key</span>
-              <input className="in" type="password" value={form.api_key} onChange={set("api_key")} placeholder={form.provider === "local" ? "(often blank for local)" : "sk-…"} />
+              <input className="in" type="password" value={form.api_key} onChange={set("api_key")}
+                placeholder={form.provider === "local" ? "(often blank for local)" : form.provider === "azure" ? "your Azure key" : "sk-…"} />
             </label>
-            {form.provider === "local" && (
-              <label className="fld"><span>Base URL</span>
-                <input className="in" value={form.base_url} onChange={set("base_url")} placeholder="http://localhost:11434/v1" />
+            {(form.provider === "local" || form.provider === "azure" || form.provider === "openai") && (
+              <label className="fld"><span>{form.provider === "azure" ? "Azure endpoint" : form.provider === "openai" ? "Base URL (optional)" : "Base URL"}</span>
+                <input className="in" value={form.base_url} onChange={set("base_url")}
+                  placeholder={form.provider === "azure" ? "https://my-resource.openai.azure.com" : form.provider === "openai" ? "blank for api.openai.com" : "http://localhost:11434/v1"} />
+              </label>
+            )}
+            {form.provider === "azure" && (
+              <label className="fld"><span>API version</span>
+                <input className="in" value={form.api_version} onChange={set("api_version")} placeholder="2024-06-01" />
               </label>
             )}
             <label className="fld" style={{ display: "flex", gap: 8, alignItems: "center" }}>

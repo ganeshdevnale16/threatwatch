@@ -73,8 +73,9 @@ class FeedbackIn(BaseModel):
 
 class ModelIn(BaseModel):
     label: str
-    provider: Literal["openai", "anthropic", "local"]
-    model: str
+    provider: Literal["openai", "azure", "anthropic", "local"]
+    model: str                             # for azure this is the DEPLOYMENT name
     api_key: str = ""
-    base_url: str = ""                     # for provider=local (OpenAI-compatible)
+    base_url: str = ""                     # local: OpenAI-compatible URL · azure: endpoint
+    api_version: str = ""                  # azure only, e.g. 2024-06-01
     make_default: bool = False

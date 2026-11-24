@@ -198,7 +198,8 @@ def add_model(body: ModelIn):
     if not body.model.strip():
         raise HTTPException(400, "model is required")
     m = store.add_model(body.label.strip() or body.model, body.provider, body.model.strip(),
-                        body.api_key.strip(), body.base_url.strip(), body.make_default)
+                        body.api_key.strip(), body.base_url.strip(), body.make_default,
+                        api_version=body.api_version.strip())
     m["api_key"] = _mask(m["api_key"])
     return m
 

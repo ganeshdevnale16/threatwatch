@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS alerts (
 CREATE INDEX IF NOT EXISTS ix_alerts_seq ON alerts(seq);
 CREATE TABLE IF NOT EXISTS models (
   id TEXT PRIMARY KEY, label TEXT, provider TEXT, model TEXT, api_key TEXT,
-  base_url TEXT, is_default INTEGER DEFAULT 0, created_at REAL);
+  base_url TEXT, api_version TEXT DEFAULT '', is_default INTEGER DEFAULT 0, created_at REAL);
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 """
 
@@ -35,6 +35,10 @@ class Store:
             if str(path) != ":memory:":
                 self._db.execute("PRAGMA journal_mode=WAL")
             self._db.executescript(_SCHEMA)
+            # migration for databases created before api_version existed
+            cols = [r[1] for r in self._db.execute("PRAGMA table_info(models)").fetchall()]
+            if "api_version" not in cols:
+                self._db.execute("ALTER TABLE models ADD COLUMN api_version TEXT DEFAULT ''")
             self._db.commit()
         self._seq = self._max_alert_seq()
 
@@ -143,16 +147,16 @@ class Store:
         return {"total": total, "by_class": by_class, "by_severity": by_sev}
 
     # ---- AI models -------------------------------------------------------
-    def add_model(self, label, provider, model, api_key="", base_url="", make_default=False) -> dict:
+    def add_model(self, label, provider, model, api_key="", base_url="", make_default=False, api_version="") -> dict:
         mid = "model_" + secrets.token_hex(4)
         with self._lock:
             if make_default:
                 self._db.execute("UPDATE models SET is_default=0")
             has_default = self._db.execute("SELECT COUNT(*) FROM models WHERE is_default=1").fetchone()[0]
             self._db.execute(
-                "INSERT INTO models(id,label,provider,model,api_key,base_url,is_default,created_at) "
-                "VALUES (?,?,?,?,?,?,?,?)",
-                (mid, label, provider, model, api_key, base_url,
+                "INSERT INTO models(id,label,provider,model,api_key,base_url,api_version,is_default,created_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?)",
+                (mid, label, provider, model, api_key, base_url, api_version,
                  1 if (make_default or not has_default) else 0, time.time()))
             self._db.commit()
         return self.get_model(mid)
